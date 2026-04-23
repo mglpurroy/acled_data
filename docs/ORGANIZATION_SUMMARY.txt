@@ -1,0 +1,205 @@
+===============================================================================
+ACLED DATA FOLDER ORGANIZATION - COMPLETED
+===============================================================================
+Date: January 11, 2026
+Status: ✓ SUCCESSFULLY ORGANIZED
+
+===============================================================================
+WHAT WAS DONE
+===============================================================================
+
+1. Created New Folder Structure:
+   ✓ data/master/current/   - For current master dataset
+   ✓ data/master/archive/   - For archived previous versions
+   ✓ data/by_country/       - For individual country files
+   ✓ logs/                  - For update logs
+
+2. Moved Master File:
+   ✓ acled_data_all_12182025.csv → data/master/current/
+   ✓ Created copy as: acled_data_current.csv (easy access)
+   ✓ Removed old file from root directory
+
+3. Moved Country Files:
+   ✓ All 239 country CSV files → data/by_country/
+   ✓ Includes summary.csv with country statistics
+   ✓ Removed old acled_by_country/ folder
+
+4. Cleaned Up:
+   ✓ Removed acled_data_all_12182025.csv from root
+   ✓ Removed acled_by_country/ folder
+   ✓ All scripts and documentation remain in root
+
+===============================================================================
+CURRENT FOLDER STRUCTURE
+===============================================================================
+
+acled_data/
+│
+├── data/                           ← NEW: All data organized here
+│   ├── master/
+│   │   ├── current/
+│   │   │   ├── acled_data_current.csv        ← USE THIS FILE
+│   │   │   └── acled_data_all_12182025.csv   ← Dated backup
+│   │   └── archive/                          ← Future archived versions
+│   └── by_country/
+│       ├── acled_Afghanistan.csv
+│       ├── acled_Pakistan.csv
+│       ├── ... (239 country files total)
+│       └── summary.csv
+│
+├── logs/                           ← NEW: Future update logs
+│
+├── Scripts (in root):
+│   ├── update_acled.R
+│   ├── acled_incremental_updater.R
+│   ├── acled_country_splitter.R
+│   ├── check_acled_data.R
+│   └── migrate_to_new_structure.R
+│
+├── Batch files:
+│   ├── update_acled.bat
+│   ├── update_acled_scheduled.bat
+│   ├── check_data.bat
+│   └── schedule_acled_update.ps1
+│
+└── Documentation:
+    ├── README.md
+    ├── QUICK_START.md
+    ├── FOLDER_STRUCTURE.txt
+    └── ORGANIZATION_SUMMARY.txt (this file)
+
+===============================================================================
+FILE COUNTS
+===============================================================================
+
+Master Files:    2 files in data/master/current/
+                 0 files in data/master/archive/
+Country Files:   239 files in data/by_country/
+Scripts:         10 files (R scripts and batch files)
+Documentation:   4 files (README, guides, references)
+
+===============================================================================
+YOUR MAIN DATA FILES
+===============================================================================
+
+Primary Master File (USE THIS):
+  📄 data/master/current/acled_data_current.csv
+     This file contains ALL ACLED data from 1997 to December 18, 2025
+
+Dated Backup:
+  📄 data/master/current/acled_data_all_12182025.csv
+     Identical to above, but with date in filename for reference
+
+Country Files:
+  📁 data/by_country/
+     239 individual country files for targeted analysis
+     Each file contains only data for that specific country
+
+Summary File:
+  📄 data/by_country/summary.csv
+     Overview of all countries with record counts and statistics
+
+===============================================================================
+NEXT STEPS
+===============================================================================
+
+1. To Update Your Data:
+   
+   Run: update_acled.bat
+   
+   OR in R:
+   source("update_acled.R")
+   
+   This will:
+   - Download new ACLED events since December 18, 2025
+   - Use 7-day overlap to catch any updates
+   - Archive the old master file
+   - Create new updated master file
+   - Update all country files
+   - Save new master as: data/master/current/acled_data_current.csv
+
+2. To Check Your Data:
+   
+   Run: check_data.bat
+   
+   OR in R:
+   source("check_acled_data.R")
+   
+   This will show:
+   - Folder structure status
+   - File counts and sizes
+   - Date ranges covered
+   - Data quality metrics
+
+3. To Use Your Data in R:
+   
+   library(readr)
+   
+   # Load complete dataset
+   data <- read_csv("data/master/current/acled_data_current.csv")
+   
+   # Load specific country
+   afghanistan <- read_csv("data/by_country/acled_Afghanistan.csv")
+   
+   # View summary
+   summary_data <- read_csv("data/by_country/summary.csv")
+
+4. To Schedule Automatic Updates:
+   
+   Open PowerShell as Administrator and run:
+   .\schedule_acled_update.ps1
+   
+   This will set up weekly automatic updates every Monday at 2:00 AM
+
+===============================================================================
+BENEFITS OF NEW STRUCTURE
+===============================================================================
+
+✓ Clean Organization: All data in one 'data' folder
+✓ Easy Access: Master file always named 'acled_data_current.csv'
+✓ Automatic Archiving: Old versions saved with timestamps
+✓ Faster Analysis: Load individual country files instead of full dataset
+✓ Better Management: Clear separation of data, scripts, and documentation
+✓ Future-Proof: Structure supports incremental updates and version control
+
+===============================================================================
+MAINTENANCE NOTES
+===============================================================================
+
+Regular Tasks:
+- Update data weekly (automatic if scheduled)
+- Check logs in logs/ folder
+- Monitor disk space (master file ~300-500 MB)
+
+Periodic Cleanup:
+- Archive folder: Keep last 3-5 versions, delete older ones
+- Logs folder: Delete logs older than 3 months
+- Country files: Automatically updated, no manual cleanup needed
+
+===============================================================================
+SUPPORT & DOCUMENTATION
+===============================================================================
+
+Quick Reference:     QUICK_START.md
+Complete Guide:      README.md
+Folder Details:      FOLDER_STRUCTURE.txt
+This Summary:        ORGANIZATION_SUMMARY.txt
+
+For questions or issues, refer to the documentation files or check:
+https://acleddata.com/ (ACLED data source)
+
+===============================================================================
+ORGANIZATION COMPLETE - READY TO USE!
+===============================================================================
+
+Your ACLED data management system is now fully organized and ready for:
+  ✓ Regular updates (manual or automatic)
+  ✓ Data analysis and research
+  ✓ Country-specific studies
+  ✓ Historical data tracking
+  ✓ Automated workflows
+
+Simply run 'update_acled.bat' to get the latest ACLED data!
+
+===============================================================================
+

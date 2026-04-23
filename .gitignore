@@ -1,0 +1,21 @@
+# Data files - stored in Databricks, not in git
+data/
+
+# Temp files
+tmp/
+*.tmp
+
+# Logs
+logs/
+
+# R session
+.Rhistory
+.RData
+.Rproj.user/
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,249 @@
+ACLED DATA MANAGEMENT - FOLDER STRUCTURE
+================================================================================
+
+ROOT: acled_data/
+│
+├── 📁 data/                           Main data directory
+│   │
+│   ├── 📁 master/                     Master datasets (complete ACLED data)
+│   │   │
+│   │   ├── 📁 current/                Current/active master files
+│   │   │   ├── 📄 acled_data_current.csv        ← PRIMARY FILE (use this)
+│   │   │   └── 📄 acled_data_all_01112026.csv   ← Dated backup
+│   │   │
+│   │   └── 📁 archive/                Archived previous versions
+│   │       ├── 📄 acled_data_all_12182024_archived_20250111_143052.csv
+│   │       └── 📄 ... (older versions with timestamps)
+│   │
+│   └── 📁 by_country/                 Country-specific data files
+│       ├── 📄 acled_Afghanistan.csv
+│       ├── 📄 acled_Pakistan.csv
+│       ├── 📄 acled_Ukraine.csv
+│       ├── 📄 acled_Sudan.csv
+│       ├── 📄 ... (one file per country)
+│       └── 📄 country_summary.csv     ← Summary of all countries
+│
+├── 📁 logs/                           Update logs from scheduled tasks
+│   ├── 📄 acled_update_2026-01-11_0200.log
+│   └── 📄 ... (timestamped log files)
+│
+├── 📄 update_acled.R                  Main update script
+├── 📄 acled_incremental_updater.R     Core update logic
+├── 📄 acled_country_splitter.R        Country file generator
+├── 📄 check_acled_data.R              Data verification script
+├── 📄 migrate_to_new_structure.R      Migration helper
+│
+├── 📄 update_acled.bat                Windows batch file (manual update)
+├── 📄 update_acled_scheduled.bat      Windows batch file (scheduled)
+├── 📄 check_data.bat                  Quick data check
+├── 📄 schedule_acled_update.ps1       Task scheduler setup
+│
+├── 📄 README.md                       Complete documentation
+├── 📄 QUICK_START.md                  Quick start guide
+└── 📄 FOLDER_STRUCTURE.txt            This file
+
+
+DATA FLOW
+================================================================================
+
+1. INITIAL DOWNLOAD (No existing data)
+   ────────────────────────────────────
+   
+   User runs: update_acled.bat
+        ↓
+   System downloads: COMPLETE DATASET (1997 to present)
+        ↓
+   Saves to: data/master/current/acled_data_current.csv
+        ↓
+   Splits into: data/by_country/acled_[CountryName].csv
+
+
+2. INCREMENTAL UPDATE (Existing data present)
+   ───────────────────────────────────────────
+   
+   User runs: update_acled.bat
+        ↓
+   System finds: data/master/current/acled_data_current.csv
+        ↓
+   Identifies: Latest date in existing data (e.g., Jan 4, 2026)
+        ↓
+   Downloads: NEW data from (latest_date - 7 days) to present
+              (Dec 28, 2025 to Jan 11, 2026)
+        ↓
+   Archives old: data/master/archive/acled_data_all_..._archived_....csv
+        ↓
+   Merges + Deduplicates: Old data + New data
+        ↓
+   Saves updated: data/master/current/acled_data_current.csv
+        ↓
+   Updates country files: data/by_country/acled_[CountryName].csv
+
+
+3. AUTOMATIC SCHEDULED UPDATE (Weekly)
+   ────────────────────────────────────
+   
+   Task Scheduler: Runs every Monday 2:00 AM
+        ↓
+   Executes: update_acled_scheduled.bat
+        ↓
+   Follows: Same flow as "INCREMENTAL UPDATE"
+        ↓
+   Logs to: logs/acled_update_[date]_[time].log
+
+
+KEY FILES TO USE
+================================================================================
+
+For Analysis:
+  Primary:  data/master/current/acled_data_current.csv
+            ↳ Always the most up-to-date complete dataset
+  
+  Country:  data/by_country/acled_[CountryName].csv
+            ↳ Individual country files for focused analysis
+  
+  Summary:  data/by_country/country_summary.csv
+            ↳ Overview of all countries (records, dates, status)
+
+For Reference:
+  Backup:   data/master/current/acled_data_all_[date].csv
+            ↳ Dated backup (same as current, different name)
+  
+  Archive:  data/master/archive/
+            ↳ Previous versions for comparison or rollback
+
+
+FILE NAMING CONVENTIONS
+================================================================================
+
+Master Files:
+  Current:   acled_data_current.csv
+  Dated:     acled_data_all_MMDDYYYY.csv
+             Example: acled_data_all_01112026.csv
+  
+  Archived:  acled_data_all_MMDDYYYY_archived_YYYYMMDD_HHMMSS.csv
+             Example: acled_data_all_12182024_archived_20250111_143052.csv
+
+Country Files:
+  Format:    acled_[CountryName].csv
+  Examples:  acled_Afghanistan.csv
+             acled_United_States.csv
+             acled_Democratic_Republic_of_Congo.csv
+  Note:      Spaces and special characters replaced with underscores
+
+Log Files:
+  Format:    acled_update_YYYY-MM-DD_HHMM.log
+  Example:   acled_update_2026-01-11_0200.log
+
+
+STORAGE OPTIMIZATION
+================================================================================
+
+Why This Structure?
+
+1. CURRENT Folder:
+   - Always contains latest data
+   - Easy to access: same filename (acled_data_current.csv)
+   - Includes dated backup for reference
+
+2. ARCHIVE Folder:
+   - Keeps historical versions
+   - Timestamped for tracking changes
+   - Allows rollback if needed
+   - Can be cleaned periodically
+
+3. BY_COUNTRY Folder:
+   - Smaller file sizes for targeted analysis
+   - Faster loading for single countries
+   - Easier to share specific country data
+   - Updated incrementally
+
+
+MAINTENANCE
+================================================================================
+
+Regular Tasks:
+  ✓ Update data weekly (automatic if scheduled)
+  ✓ Check status: check_data.bat
+  ✓ Review logs in logs/ folder
+
+Periodic Tasks:
+  ✓ Archive cleanup: Delete old archives (keep last 3-5)
+  ✓ Log cleanup: Delete logs older than 3 months
+  ✓ Verify data quality: source("check_acled_data.R")
+
+One-time Tasks:
+  ✓ Migration: source("migrate_to_new_structure.R") (if upgrading)
+  ✓ Schedule: .\schedule_acled_update.ps1 (for automatic updates)
+
+
+DISK SPACE ESTIMATES
+================================================================================
+
+Approximate file sizes:
+
+Master File (Current):
+  - Complete dataset (1997-present): ~300-500 MB
+  - Grows by ~5-10 MB per month
+
+Country Files:
+  - Varies by country activity
+  - Large: 10-50 MB (Syria, Yemen, Afghanistan, etc.)
+  - Medium: 1-10 MB
+  - Small: <1 MB
+  - Total all countries: ~300-500 MB
+
+Archives:
+  - Each archive: ~300-500 MB
+  - Keep 3-5 archives: ~1.5-2.5 GB
+  - Can delete old archives to save space
+
+Logs:
+  - Per update: ~10-100 KB
+  - 52 weeks/year: ~5-10 MB/year
+  - Negligible space usage
+
+Total Recommended Space: 3-5 GB
+
+
+BACKUP RECOMMENDATIONS
+================================================================================
+
+Critical Files (Must backup):
+  ✓ data/master/current/acled_data_current.csv
+  ✓ data/by_country/ (entire folder)
+
+Nice to Have:
+  ✓ data/master/archive/ (recent archives)
+  ✓ Scripts (*.R, *.bat, *.ps1)
+  ✓ Documentation (*.md, *.txt)
+
+Not Necessary:
+  ✗ logs/ (can be regenerated)
+  ✗ Old archives (unless needed for analysis)
+
+
+INTEGRATION WITH OTHER TOOLS
+================================================================================
+
+OneDrive/SharePoint:
+  - Entire folder can be synced
+  - Recommended: Use selective sync
+  - Exclude: logs/ and data/master/archive/ to save space
+
+Git/Version Control:
+  - Track: Scripts and documentation
+  - Ignore: data/ and logs/ folders (too large)
+  - Use .gitignore:
+      data/
+      logs/
+      *.csv
+
+Backup Software:
+  - Include: data/master/current/ and data/by_country/
+  - Frequency: Weekly (after updates)
+
+
+================================================================================
+End of Folder Structure Documentation
+================================================================================
+
