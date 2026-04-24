@@ -1,0 +1,16 @@
+Package: acleddata
+Title: Read ACLED Conflict Data from Databricks
+Version: 0.1.0
+Authors@R:
+    person("Miguel", "Purroy", email = "mpurroyvitola@worldbank.org",
+           role = c("aut", "cre"))
+Description: Provides a simple interface to read ACLED (Armed Conflict Location
+    and Event Data) from a Databricks Unity Catalog Volume. Requires
+    DATABRICKS_HOST and DATABRICKS_TOKEN to be set in ~/.Renviron.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.0.0
+Imports:
+    httr2,
+    readr
