@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "acleddata"
+version = "0.1.0"
+description = "Read ACLED conflict data from Databricks"
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+    "pandas",
+]
+
+[project.urls]
+Repository = "https://github.com/mglpurroy/acled_data"

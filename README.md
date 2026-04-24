@@ -1,12 +1,48 @@
 # acleddata
 
-R package to access ACLED (Armed Conflict Location & Event Data) conflict data
-maintained by the World Bank FCV Analytics Team.
+R and Python package to access ACLED (Armed Conflict Location & Event Data)
+conflict data maintained by the World Bank FCV Analytics Team.
 
 Data is updated daily via a Databricks scheduled job and served from a central
 Unity Catalog Volume — no manual downloads needed.
 
 ---
+
+## Python
+
+**Install:**
+```bash
+pip install "git+https://github.com/mglpurroy/acled_data.git#subdirectory=python"
+```
+
+**Use:**
+```python
+from acleddata import acled_auth, read_acled
+
+acled_auth(
+    host  = "https://adb-8552758251265347.7.azuredatabricks.net",
+    token = "your_token"
+)
+
+# Full dataset
+df = read_acled()
+
+# Single country
+df = read_acled(country="Afghanistan")
+
+# Multiple countries
+df = read_acled(countries=["Sudan", "Yemen", "Syria"])
+```
+
+Or set credentials as environment variables instead of calling `acled_auth()`:
+```bash
+export DATABRICKS_HOST=https://adb-8552758251265347.7.azuredatabricks.net
+export DATABRICKS_TOKEN=your_token
+```
+
+---
+
+## R
 
 ## Installation
 
