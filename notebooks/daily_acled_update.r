@@ -4,14 +4,30 @@
 
 # COMMAND ----------
 
-# Resolve paths: Git Folder root and data storage on DBFS
-repo_root <- dirname(dirname(sys.frame(1)$ofile %||% "/Workspace/placeholder"))
-scripts_dir <- file.path(repo_root, "scripts")
+# Find scripts dir by checking known Databricks Repo paths
+candidate_dirs <- c(
+  Sys.getenv("ACLED_SCRIPTS_DIR", unset = ""),
+  "/Workspace/Repos/mpurroyvitola@worldbank.org/acled_data/scripts",
+  "/Workspace/Repos/mglpurroy@gmail.com/acled_data/scripts",
+  "/Workspace/Users/mpurroyvitola@worldbank.org/acled_data/scripts"
+)
 
-# Fallback: hardcode if path detection fails (update username if needed)
-if (!dir.exists(scripts_dir)) {
-  scripts_dir <- "/Workspace/Repos/mglpurroy@gmail.com/acled_data/scripts"
+scripts_dir <- NULL
+for (d in candidate_dirs) {
+  if (nchar(d) > 0 &&
+      file.exists(file.path(d, "acled_incremental_updater.R"))) {
+    scripts_dir <- d
+    break
+  }
 }
+
+if (is.null(scripts_dir)) {
+  stop(
+    "Cannot find scripts. Tried: ",
+    paste(candidate_dirs[nchar(candidate_dirs) > 0], collapse = ", ")
+  )
+}
+cat(sprintf("Using scripts from: %s\n", scripts_dir))
 
 # Data goes to DBFS so it persists across cluster restarts
 base_dir <- "/dbfs/acled"
