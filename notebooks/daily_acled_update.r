@@ -71,19 +71,3 @@ print(head(result$summary, 20))
 cat(sprintf("\nMaster file: %s\n", result$master_file))
 cat(sprintf("Completed at: %s\n", Sys.time()))
 
-# COMMAND ----------
-
-# Copy master file to Unity Catalog Volume
-volume_path <- paste0(
-  "/Volumes/prd_datascience_compoundriskmonitor/volumes/",
-  "compoundriskmonitor/fcvriskdashboard/acled_data_current.csv"
-)
-
-cat(sprintf("\nCopying to Unity Catalog Volume: %s\n", volume_path))
-success <- file.copy(result$master_file, volume_path, overwrite = TRUE)
-
-if (success) {
-  cat("Volume copy successful.\n")
-} else {
-  stop("Failed to copy to Unity Catalog Volume: ", volume_path)
-}
