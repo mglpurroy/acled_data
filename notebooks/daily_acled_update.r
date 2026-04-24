@@ -60,7 +60,7 @@ source(file.path(scripts_dir, "acled_country_splitter.R"))
 result <- complete_acled_update(
   username = acled_username,
   base_dir = base_dir,
-  overlap_days = 360,
+  overlap_days = 30,
   password = acled_password
 )
 
