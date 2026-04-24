@@ -6,8 +6,9 @@ library(readr)
 #' Requires DATABRICKS_HOST and DATABRICKS_TOKEN in ~/.Renviron
 #'
 #' @param country Optional country name to filter (e.g. "Afghanistan")
+#' @param countries Optional character vector of countries to filter
 #' @return A data frame with ACLED data
-read_acled <- function(country = NULL) {
+read_acled <- function(country = NULL, countries = NULL) {
   host  <- Sys.getenv("DATABRICKS_HOST")
   token <- Sys.getenv("DATABRICKS_TOKEN")
 
@@ -18,22 +19,14 @@ read_acled <- function(country = NULL) {
     )
   }
 
-  # Use country-specific file if requested (much smaller download)
-  if (!is.null(country)) {
-    clean_name <- gsub("[^A-Za-z0-9]", "_", country)
-    clean_name <- gsub("_+", "_", clean_name)
-    clean_name <- gsub("^_|_$", "", clean_name)
-    path <- paste0("/dbfs/acled/data/by_country/acled_", clean_name, ".csv")
-    cat(sprintf("Fetching data for: %s\n", country))
-  } else {
-    path <- paste0(
-      "/Volumes/prd_datascience_compoundriskmonitor/volumes/",
-      "compoundriskmonitor/fcvriskdashboard/acled_data_current.csv"
-    )
-    cat("Fetching full ACLED dataset from Databricks...\n")
-  }
+  path <- paste0(
+    "/Volumes/prd_datascience_compoundriskmonitor/volumes/",
+    "compoundriskmonitor/fcvriskdashboard/acled_data_current.csv"
+  )
 
-  # Stream response to a temp file to avoid loading into memory as string
+  cat("Downloading ACLED dataset from Databricks (streaming)...\n")
+
+  # Stream directly to disk — avoids loading 500MB+ into memory as a string
   tmp <- tempfile(fileext = ".csv")
   on.exit(unlink(tmp))
 
@@ -43,6 +36,18 @@ read_acled <- function(country = NULL) {
 
   df <- read_csv(tmp, show_col_types = FALSE)
 
-  cat(sprintf("Loaded %s records.\n", format(nrow(df), big.mark = ",")))
+  # Filter by country/countries if requested
+  filter_countries <- c(country, countries)
+  if (length(filter_countries) > 0) {
+    df <- df[df$country %in% filter_countries, ]
+    cat(sprintf(
+      "Filtered to %s: %s records.\n",
+      paste(filter_countries, collapse = ", "),
+      format(nrow(df), big.mark = ",")
+    ))
+  } else {
+    cat(sprintf("Loaded %s records.\n", format(nrow(df), big.mark = ",")))
+  }
+
   df
 }
