@@ -5,14 +5,17 @@
 # COMMAND ----------
 
 source = "dbfs:/acled/data/master/current/acled_data_current.csv"
-target = (
-    "/Volumes/prd_datascience_compoundriskmonitor/volumes"
-    "/compoundriskmonitor/fcvriskdashboard/acled_data_current.csv"
-)
 
-print(f"Source : {source}")
-print(f"Target : {target}")
+targets = [
+    "/Volumes/prd_datascience_compoundriskmonitor/volumes/compoundriskmonitor/fcvriskdashboard/acled_data_current.csv",
+    "/Volumes/qa_datascience_compoundriskmonitor/volumes/compoundriskmonitor/fcvriskdashboard/acled_data_current.csv",
+]
 
-dbutils.fs.cp(source, target, recurse=False)
+print(f"Source: {source}")
 
-print("Copy successful.")
+for target in targets:
+    print(f"Copying to: {target}")
+    dbutils.fs.cp(source, target, recurse=False)
+    print("  Done.")
+
+print("All copies successful.")
