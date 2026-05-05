@@ -13,15 +13,18 @@ targets = [
 
 print(f"Source: {source}")
 
-errors = []
+warnings = []
 for target in targets:
     print(f"Copying to: {target}")
     try:
         dbutils.fs.cp(source, target, recurse=False)
         print("  Done.")
     except Exception as e:
-        print(f"  Failed: {e}")
-        errors.append(target)
+        print(f"  Warning: could not copy to {target}")
+        print(f"  Reason: {e}")
+        warnings.append(target)
 
-if errors:
-    raise Exception(f"Copy failed for: {', '.join(errors)}")
+if warnings:
+    print(f"\nWarning: copy skipped for {len(warnings)} target(s) — check permissions.")
+else:
+    print("\nAll copies successful.")
