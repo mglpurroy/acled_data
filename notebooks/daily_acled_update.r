@@ -70,13 +70,33 @@ DELTA_TABLE <- paste0(
 sql("CREATE SCHEMA IF NOT EXISTS prd_datascience_compoundriskmonitor.compoundriskmonitor")
 
 cat(sprintf(
-  "Writing %s records to Delta table: %s\n",
+  "Merging %s records into Delta table: %s\n",
   format(nrow(updated_data), big.mark = ","),
   DELTA_TABLE
 ))
 
 spark_df <- as.DataFrame(updated_data)
-saveAsTable(spark_df, DELTA_TABLE, source = "delta", mode = "overwrite")
+
+# First run: table doesn't exist yet — create it
+table_exists <- tryCatch({
+  sql(sprintf("DESCRIBE %s", DELTA_TABLE))
+  TRUE
+}, error = function(e) FALSE)
+
+if (!table_exists) {
+  cat("Table not found — creating for the first time.\n")
+  saveAsTable(spark_df, DELTA_TABLE, source = "delta", mode = "overwrite")
+} else {
+  # Subsequent runs: merge — insert new events, update changed ones
+  createOrReplaceTempView(spark_df, "acled_updates")
+  sql(sprintf("
+    MERGE INTO %s AS target
+    USING acled_updates AS source
+    ON target.event_id_cnty = source.event_id_cnty
+    WHEN MATCHED THEN UPDATE SET *
+    WHEN NOT MATCHED THEN INSERT *
+  ", DELTA_TABLE))
+}
 
 cat("Delta table updated successfully.\n")
 
