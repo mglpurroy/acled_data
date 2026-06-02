@@ -20,8 +20,9 @@ pip install "git+https://github.com/mglpurroy/acled_data.git#subdirectory=python
 from acleddata import acled_auth, read_acled
 
 acled_auth(
-    host  = "https://adb-8552758251265347.7.azuredatabricks.net",
-    token = "your_token"
+    host         = "https://adb-8552758251265347.7.azuredatabricks.net",
+    token        = "your_token",
+    warehouse_id = "your_warehouse_id"
 )
 
 # Full dataset
@@ -30,8 +31,12 @@ df = read_acled()
 # Single country
 df = read_acled(country="Afghanistan")
 
-# Multiple countries
-df = read_acled(countries=["Sudan", "Yemen", "Syria"])
+# Multiple countries with date range
+df = read_acled(
+    countries  = ["Sudan", "Yemen", "Syria"],
+    start_date = "2020-01-01",
+    end_date   = "2024-12-31"
+)
 ```
 
 Or set credentials as environment variables instead of calling `acled_auth()`:
@@ -68,12 +73,15 @@ Copy the token — it is only shown once.
 
 **Step 2 — Save your credentials**
 
-Add these two lines to your `~/.Renviron` file:
+Add these lines to your `~/.Renviron` file:
 
 ```
 DATABRICKS_HOST=https://adb-8552758251265347.7.azuredatabricks.net
 DATABRICKS_TOKEN=your_token_here
+DATABRICKS_WAREHOUSE_ID=your_warehouse_id_here
 ```
+
+Find your warehouse ID in Databricks: **SQL → SQL Warehouses → click your warehouse → Connection details → HTTP path** — the ID is the last part after `/warehouses/`.
 
 Open the file with:
 ```r
@@ -105,11 +113,23 @@ horn_of_africa <- read_acled(countries = c("Ethiopia", "Somalia", "Sudan"))
 library(acleddata)
 
 acled_auth(
-  host  = "https://adb-8552758251265347.7.azuredatabricks.net",
-  token = "your_token_here"
+  host         = "https://adb-8552758251265347.7.azuredatabricks.net",
+  token        = "your_token_here",
+  warehouse_id = "your_warehouse_id"
 )
 
+# Full dataset
 acled <- read_acled()
+
+# Single country
+sudan <- read_acled(country = "Sudan")
+
+# Multiple countries with date range
+df <- read_acled(
+  countries  = c("Sudan", "Yemen"),
+  start_date = "2020-01-01",
+  end_date   = "2024-12-31"
+)
 ```
 
 ---

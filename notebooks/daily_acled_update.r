@@ -29,15 +29,11 @@ if (is.null(scripts_dir)) {
 }
 cat(sprintf("Using scripts from: %s\n", scripts_dir))
 
-# Data goes to DBFS so it persists across cluster restarts
+# DBFS used as working storage for incremental updates
 base_dir <- "/dbfs/acled"
 
 # COMMAND ----------
 
-# Get credentials
-# Option A: Databricks secret (recommended)
-#   dbutils.secrets.get(scope="acled", key="password")  <- run this in Python cell
-# Option B: Cluster environment variable ACLED_PASSWORD
 acled_password <- Sys.getenv("ACLED_PASSWORD", unset = "")
 acled_username <- Sys.getenv(
   "ACLED_USERNAME",
@@ -50,24 +46,51 @@ if (nchar(acled_password) == 0) {
 
 # COMMAND ----------
 
-# Source scripts from the Git Folder
+# Download and merge ACLED data (incremental update)
 source(file.path(scripts_dir, "acled_incremental_updater.R"))
-source(file.path(scripts_dir, "acled_country_splitter.R"))
 
-# COMMAND ----------
-
-# Run the full update
-result <- complete_acled_update(
-  username = acled_username,
-  base_dir = base_dir,
+updated_data <- update_acled_data(
+  username  = acled_username,
+  base_dir  = base_dir,
   overlap_days = 30,
-  password = acled_password
+  password  = acled_password
 )
 
 # COMMAND ----------
 
-cat("=== TOP 20 COUNTRIES BY EVENT COUNT ===\n")
-print(head(result$summary, 20))
-cat(sprintf("\nMaster file: %s\n", result$master_file))
-cat(sprintf("Completed at: %s\n", Sys.time()))
+# Write to Delta table in Unity Catalog
+library(SparkR)
 
+DELTA_TABLE <- paste0(
+  "prd_datascience_compoundriskmonitor.",
+  "compoundriskmonitor.acled"
+)
+
+cat(sprintf(
+  "Writing %s records to Delta table: %s\n",
+  format(nrow(updated_data), big.mark = ","),
+  DELTA_TABLE
+))
+
+spark_df <- as.DataFrame(updated_data)
+saveAsTable(spark_df, DELTA_TABLE, source = "delta", mode = "overwrite")
+
+cat("Delta table updated successfully.\n")
+
+# COMMAND ----------
+
+# Clean up old archives — keep only the 2 most recent
+archive_dir <- file.path(base_dir, "data", "master", "archive")
+if (dir.exists(archive_dir)) {
+  archives <- sort(
+    list.files(archive_dir, full.names = TRUE),
+    decreasing = TRUE
+  )
+  to_delete <- archives[-(1:2)]
+  if (length(to_delete) > 0) {
+    file.remove(to_delete)
+    cat(sprintf("Cleaned up %d old archive(s).\n", length(to_delete)))
+  }
+}
+
+cat(sprintf("Completed at: %s\n", Sys.time()))
