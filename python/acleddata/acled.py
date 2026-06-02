@@ -1,28 +1,25 @@
 import os
-import time
 import tempfile
-from datetime import date
 from typing import Optional
 
 import requests
 import pandas as pd
 
 
-DELTA_TABLE = (
-    "prd_datascience_compoundriskmonitor."
-    "compoundriskmonitor.acled"
+VOLUME_PATH = (
+    "/Volumes/prd_datascience_compoundriskmonitor/volumes"
+    "/compoundriskmonitor/fcvriskdashboard/acled_data_current.csv"
 )
 
 
-def acled_auth(host: str, token: str, warehouse_id: str) -> None:
+def acled_auth(host: str, token: str) -> None:
     """Set Databricks credentials for the session.
 
-    Alternatively set environment variables:
-        DATABRICKS_HOST, DATABRICKS_TOKEN, DATABRICKS_WAREHOUSE_ID
+    Alternatively set DATABRICKS_HOST and DATABRICKS_TOKEN
+    as environment variables.
     """
     os.environ["DATABRICKS_HOST"] = host
     os.environ["DATABRICKS_TOKEN"] = token
-    os.environ["DATABRICKS_WAREHOUSE_ID"] = warehouse_id
 
 
 def read_acled(
@@ -31,10 +28,10 @@ def read_acled(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ) -> pd.DataFrame:
-    """Read ACLED conflict data from Databricks Delta table.
+    """Read ACLED conflict data from Databricks.
 
     Credentials must be set via acled_auth() or environment variables:
-        DATABRICKS_HOST, DATABRICKS_TOKEN, DATABRICKS_WAREHOUSE_ID
+        DATABRICKS_HOST and DATABRICKS_TOKEN
 
     Args:
         country:    Single country name (e.g. "Afghanistan")
@@ -45,79 +42,46 @@ def read_acled(
     Returns:
         pandas DataFrame with ACLED event data
     """
-    host         = os.environ.get("DATABRICKS_HOST", "")
-    token        = os.environ.get("DATABRICKS_TOKEN", "")
-    warehouse_id = os.environ.get("DATABRICKS_WAREHOUSE_ID", "")
+    host  = os.environ.get("DATABRICKS_HOST", "")
+    token = os.environ.get("DATABRICKS_TOKEN", "")
 
-    if not host or not token or not warehouse_id:
+    if not host or not token:
         raise EnvironmentError(
-            "Credentials not set. Run acled_auth(host, token, warehouse_id) "
-            "or set environment variables:\n"
-            "  DATABRICKS_HOST\n"
-            "  DATABRICKS_TOKEN\n"
-            "  DATABRICKS_WAREHOUSE_ID"
+            "Credentials not set. Run acled_auth(host, token) or set "
+            "DATABRICKS_HOST and DATABRICKS_TOKEN environment variables."
         )
 
-    sql = _build_query(country, countries, start_date, end_date)
-    print(f"Running: {sql}")
-    return _run_sql(sql, host, token, warehouse_id)
+    print("Downloading ACLED dataset from Databricks...")
 
+    url = f"{host.rstrip('/')}/api/2.0/fs/files{VOLUME_PATH}"
 
-def _build_query(country, countries, start_date, end_date):
-    filters = []
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
+        tmp_path = tmp.name
 
+    try:
+        with requests.get(
+            url,
+            headers={"Authorization": f"Bearer {token}"},
+            stream=True,
+            timeout=300,
+        ) as r:
+            r.raise_for_status()
+            with open(tmp_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        df = pd.read_csv(tmp_path, low_memory=False)
+    finally:
+        os.unlink(tmp_path)
+
+    # Apply filters locally
     all_countries = list(filter(None, [country] + (countries or [])))
     if all_countries:
-        in_list = ", ".join(f"'{c}'" for c in all_countries)
-        filters.append(f"country IN ({in_list})")
+        df = df[df["country"].isin(all_countries)]
     if start_date:
-        filters.append(f"event_date >= '{start_date}'")
+        df = df[pd.to_datetime(df["event_date"]) >= pd.to_datetime(start_date)]
     if end_date:
-        filters.append(f"event_date <= '{end_date}'")
+        df = df[pd.to_datetime(df["event_date"]) <= pd.to_datetime(end_date)]
 
-    where = f"WHERE {' AND '.join(filters)}" if filters else ""
-    return f"SELECT * FROM {DELTA_TABLE} {where}".strip()
-
-
-def _run_sql(sql, host, token, warehouse_id):
-    headers = {"Authorization": f"Bearer {token}"}
-    url = f"{host.rstrip('/')}/api/2.0/sql/statements"
-
-    resp = requests.post(url, headers=headers, json={
-        "warehouse_id": warehouse_id,
-        "statement":    sql,
-        "wait_timeout": "50s",
-        "disposition":  "EXTERNAL_LINKS",
-        "format":       "CSV",
-    }).json()
-
-    # Poll if still running
-    while resp["status"]["state"] in ("PENDING", "RUNNING"):
-        time.sleep(2)
-        resp = requests.get(
-            f"{url}/{resp['statement_id']}",
-            headers=headers
-        ).json()
-
-    if resp["status"]["state"] != "SUCCEEDED":
-        raise RuntimeError(
-            f"Query failed: {resp['status']['error']['message']}"
-        )
-
-    # Download each chunk and combine
-    chunks = []
-    for link in resp["result"]["external_links"]:
-        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
-            tmp_path = tmp.name
-        try:
-            chunk_resp = requests.get(link["external_link"], stream=True)
-            with open(tmp_path, "wb") as f:
-                for chunk in chunk_resp.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            chunks.append(pd.read_csv(tmp_path, low_memory=False))
-        finally:
-            os.unlink(tmp_path)
-
-    df = pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame()
     print(f"Loaded {len(df):,} records.")
     return df

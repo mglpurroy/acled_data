@@ -79,6 +79,25 @@ cat("Delta table updated successfully.\n")
 
 # COMMAND ----------
 
+# Export CSV to Unity Catalog Volume for R/Python package access
+volume_path <- paste0(
+  "/Volumes/prd_datascience_compoundriskmonitor/volumes/",
+  "compoundriskmonitor/fcvriskdashboard/acled_data_current.csv"
+)
+current_csv <- file.path(
+  base_dir, "data", "master", "current", "acled_data_current.csv"
+)
+
+cat(sprintf("Exporting CSV to Volume: %s\n", volume_path))
+tryCatch({
+  file.copy(current_csv, volume_path, overwrite = TRUE)
+  cat("Volume export successful.\n")
+}, error = function(e) {
+  cat(sprintf("Warning: Volume export failed: %s\n", e$message))
+})
+
+# COMMAND ----------
+
 # Clean up old archives — keep only the 2 most recent
 archive_dir <- file.path(base_dir, "data", "master", "archive")
 if (dir.exists(archive_dir)) {
