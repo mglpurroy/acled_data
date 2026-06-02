@@ -66,6 +66,9 @@ DELTA_TABLE <- paste0(
   "compoundriskmonitor.acled"
 )
 
+# Create schema if it doesn't exist
+sql("CREATE SCHEMA IF NOT EXISTS prd_datascience_compoundriskmonitor.compoundriskmonitor")
+
 cat(sprintf(
   "Writing %s records to Delta table: %s\n",
   format(nrow(updated_data), big.mark = ","),
